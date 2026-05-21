@@ -1,4 +1,8 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+let apiURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+if (apiURL && !apiURL.endsWith('/api') && !apiURL.endsWith('/api/')) {
+  apiURL = apiURL.endsWith('/') ? `${apiURL}api` : `${apiURL}/api`;
+}
+const BASE_URL = apiURL;
 
 /**
  * Cliente HTTP personalizado basado en fetch nativo.
