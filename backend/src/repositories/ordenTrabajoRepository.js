@@ -39,7 +39,7 @@ class OrdenTrabajoRepository {
   async findById(id) {
     const order = await OrdenTrabajo.findByPk(id, {
       include: [
-        { model: Moto, as: 'moto', attributes: ['placa'] },
+        { model: Moto, as: 'moto', attributes: ['placa', 'marca', 'modelo', 'color', 'cilindraje'] },
         { model: User, as: 'mecanico', attributes: ['nombre'] },
         {
           model: DetalleOrden,
@@ -99,7 +99,7 @@ class OrdenTrabajoRepository {
 
     const updated = await OrdenTrabajo.findByPk(id, {
       include: [
-        { model: Moto, as: 'moto', attributes: ['placa'] },
+        { model: Moto, as: 'moto', attributes: ['placa', 'marca', 'modelo', 'color', 'cilindraje'] },
         { model: User, as: 'mecanico', attributes: ['nombre'] },
         {
           model: DetalleOrden,

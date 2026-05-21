@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
     "node-pg-migrate": "^8.0.4",
+    "pdfkit": "^0.18.0",
     "pg": "^8.21.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.8",

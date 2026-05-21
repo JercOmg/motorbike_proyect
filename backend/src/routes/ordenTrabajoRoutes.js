@@ -23,12 +23,9 @@ const { requireRole } = require('../middlewares/roleMiddleware');
  *         id_repuesto:
  *           type: integer
  *           description: ID del repuesto asignado
- *         nombre_repuesto:
- *           type: string
- *           description: Nombre del repuesto
  *         nombre_Respuesto:
  *           type: string
- *           description: Nombre del repuesto (llave alternativa con mayúscula)
+ *           description: Nombre del repuesto (llave exacta con mayúscula)
  *         cantidad:
  *           type: integer
  *           description: Cantidad del repuesto solicitado
@@ -40,7 +37,6 @@ const { requireRole } = require('../middlewares/roleMiddleware');
  *         id_detallerOrden: 1
  *         id_orden: 10
  *         id_repuesto: 2
- *         nombre_repuesto: "Filtro de Aceite"
  *         nombre_Respuesto: "Filtro de Aceite"
  *         cantidad: 2
  *         subtotal: 70000.0
@@ -118,7 +114,6 @@ const { requireRole } = require('../middlewares/roleMiddleware');
  *           - id_detallerOrden: 1
  *           - id_orden: 10
  *           - id_repuesto: 2
- *             nombre_repuesto: "Filtro de Aceite"
  *             nombre_Respuesto: "Filtro de Aceite"
  *             cantidad: 2
  *             subtotal: 70000.0
@@ -228,6 +223,34 @@ router.get('/:id', authMiddleware, (req, res) => ordenTrabajoController.getById(
 
 /**
  * @swagger
+ * /api/ordenes/{id}/pdf:
+ *   get:
+ *     summary: Generar un PDF con la información de la orden de trabajo (Cualquier usuario activo)
+ *     tags: [Órdenes de Trabajo]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la orden de trabajo
+ *     responses:
+ *       200:
+ *         description: Documento PDF generado exitosamente conteniendo el detalle de la orden
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Orden de trabajo no encontrada
+ *       500:
+ *         description: Error interno al generar el PDF
+ */
+router.get('/:id/pdf', authMiddleware, (req, res) => ordenTrabajoController.generarPdf(req, res));
+
+/**
+ * @swagger
  * /api/ordenes:
  *   post:
  *     summary: Crear una nueva orden de trabajo (Admin y Empleado)
@@ -310,15 +333,12 @@ router.post('/', authMiddleware, requireRole(['admin', 'empleado']), (req, res) 
  *           schema:
  *             type: object
  *             required:
- *               - id_moto
  *               - id_mecanico
  *               - fecha_ingreso
  *               - diagnostico
  *               - estado
  *               - valor_mano_obra
  *             properties:
- *               id_moto:
- *                 type: integer
  *               id_mecanico:
  *                 type: integer
  *               fecha_ingreso:
