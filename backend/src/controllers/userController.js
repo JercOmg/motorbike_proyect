@@ -1,4 +1,5 @@
 const userRepository = require('../repositories/userRepository');
+const { User } = require('../models');
 const { getPaginationParams, buildPaginatedResponse } = require('../utils/pagination');
 
 const validatePassword = (password) => {
@@ -155,10 +156,45 @@ class UserController {
   }
 
   async delete(req, res) {
-    const user = await userRepository.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    await userRepository.delete(req.params.id);
-    res.json({ message: 'Usuario eliminado exitosamente' });
+    try {
+      const { id } = req.params;
+      const user = await userRepository.findById(id);
+      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      // Programmatic check of associations
+      const associations = Object.values(User.associations);
+      for (const association of associations) {
+        if (
+          association.associationType === 'HasOne' ||
+          association.associationType === 'HasMany' ||
+          association.associationType === 'BelongsToMany'
+        ) {
+          const count = await association.target.count({
+            where: { [association.foreignKey]: id }
+          });
+          if (count > 0) {
+            return res.status(400).json({
+              error: `No se puede eliminar el usuario porque está relacionado con la entidad ${association.target.name}`
+            });
+          }
+        }
+      }
+
+      // DB-level check fallback
+      try {
+        await userRepository.delete(id);
+        res.json({ message: 'Usuario eliminado exitosamente' });
+      } catch (dbError) {
+        if (dbError.name === 'SequelizeForeignKeyConstraintError') {
+          return res.status(400).json({
+            error: 'No se puede eliminar el usuario porque está relacionado con otras entidades'
+          });
+        }
+        throw dbError;
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Error al eliminar el usuario: ' + error.message });
+    }
   }
 
   async toggleActive(req, res) {

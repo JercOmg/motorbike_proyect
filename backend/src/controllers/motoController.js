@@ -1,5 +1,5 @@
 const motoRepository = require('../repositories/motoRepository');
-const { User } = require('../models');
+const { User, Moto } = require('../models');
 const { getPaginationParams, buildPaginatedResponse } = require('../utils/pagination');
 
 class MotoController {
@@ -128,10 +128,45 @@ class MotoController {
   }
 
   async delete(req, res) {
-    const moto = await motoRepository.findById(req.params.id);
-    if (!moto) return res.status(404).json({ error: 'Moto no encontrada' });
-    await motoRepository.delete(req.params.id);
-    res.json({ message: 'Moto eliminada exitosamente' });
+    try {
+      const { id } = req.params;
+      const moto = await motoRepository.findById(id);
+      if (!moto) return res.status(404).json({ error: 'Moto no encontrada' });
+
+      // Programmatic check of associations
+      const associations = Object.values(Moto.associations);
+      for (const association of associations) {
+        if (
+          association.associationType === 'HasOne' ||
+          association.associationType === 'HasMany' ||
+          association.associationType === 'BelongsToMany'
+        ) {
+          const count = await association.target.count({
+            where: { [association.foreignKey]: id }
+          });
+          if (count > 0) {
+            return res.status(400).json({
+              error: `No se puede eliminar la moto porque está relacionada con la entidad ${association.target.name}`
+            });
+          }
+        }
+      }
+
+      // DB-level check fallback
+      try {
+        await motoRepository.delete(id);
+        res.json({ message: 'Moto eliminada exitosamente' });
+      } catch (dbError) {
+        if (dbError.name === 'SequelizeForeignKeyConstraintError') {
+          return res.status(400).json({
+            error: 'No se puede eliminar la moto porque está relacionada con otras entidades'
+          });
+        }
+        throw dbError;
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Error al eliminar la moto: ' + error.message });
+    }
   }
 }
 
