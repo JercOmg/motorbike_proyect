@@ -63,7 +63,7 @@ Flujo: Routes → Controllers → Repositories → Models (Sequelize) → Postgr
 | modelo           | VARCHAR   | NOT NULL                                       |
 | color            | VARCHAR   | NOT NULL                                       |
 | cilindraje       | VARCHAR   | NOT NULL                                       |
-| id_cliente       | INTEGER   | NOT NULL, FK clientes                          |
+| id_propietario   | INTEGER   | NOT NULL, FK users                             |
 | responsible_user | INTEGER   | NOT NULL, FK users                             |
 | anio             | INTEGER   | NOT NULL                                       |
 | create_date      | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP            |
@@ -121,7 +121,7 @@ Flujo: Routes → Controllers → Repositories → Models (Sequelize) → Postgr
 | GET    | /api/users/:id                 | Obtener usuario por ID. Incluye `cedula` y `telefono`                      | Cualquier usuario activo    |
 | POST   | /api/users                     | Crear usuario. Admin: puede crear `empleado` o `cliente`. Empleado: solo `cliente`. Requiere `cedula` y `telefono` | Admin y Empleado            |
 | PUT    | /api/users/:id                 | Actualizar usuario (nombre, correo, cedula, telefono obligatorios)         | Admin                       |
-| DELETE | /api/users/:id                 | Eliminar usuario                                                           | Admin                       |
+| DELETE | /api/users/:id                 | Eliminar usuario. **Bloqueado si el usuario está asociado a motos, repuestos u órdenes de trabajo** | Admin                       |
 | PATCH  | /api/users/:id/toggle-active   | Activar/desactivar usuario (no aplica a admins)                            | Admin                       |
 | PATCH  | /api/users/change-password     | Cambiar contraseña propia                                                  | Cualquier usuario activo    |
 | PATCH  | /api/users/:id/reset-password  | Resetear contraseña de un usuario (no aplica a admins)                     | Admin                       |
@@ -133,7 +133,7 @@ Flujo: Routes → Controllers → Repositories → Models (Sequelize) → Postgr
 | GET    | /api/motos/:id                | Obtener moto por ID                                                   | Cualquier usuario activo|
 | POST   | /api/motos                    | Crear moto (requiere anio, valida propietario existente)                   | Admin y Empleado       |
 | PUT    | /api/motos/:id                | Actualizar moto (id_propietario obligatorio, anio opcional, no create_date)| Admin y Empleado       |
-| DELETE | /api/motos/:id                | Eliminar moto                                                         | Admin y Empleado       |
+| DELETE | /api/motos/:id                | Eliminar moto. **Bloqueado si la moto tiene órdenes de trabajo asociadas** | Admin y Empleado       |
 
 ### Repuestos
 | Método | Ruta                          | Descripción                                                           | Permisos               |
@@ -142,16 +142,17 @@ Flujo: Routes → Controllers → Repositories → Models (Sequelize) → Postgr
 | GET    | /api/repuestos/:id            | Obtener repuesto por ID (retorna info básica: id_repuesto, referencia, nombre, stock, precio) | Cualquier usuario activo|
 | POST   | /api/repuestos                | Crear repuesto (todos los campos obligatorios, referencia única, >=0, auto user) | Admin y Empleado       |
 | PUT    | /api/repuestos/:id            | Actualizar repuesto (todos los campos obligatorios, referencia única, >=0, auto user) | Admin y Empleado       |
-| DELETE | /api/repuestos/:id            | Eliminar repuesto (solo si no tiene relaciones con otras entidades)    | Admin y Empleado       |
+| DELETE | /api/repuestos/:id            | Eliminar repuesto. **Bloqueado si el repuesto está ligado a alguna orden de trabajo** | Admin y Empleado       |
 
 ### Órdenes de Trabajo
-| Método | Ruta                          | Descripción                                                           | Permisos               |
-|--------|-------------------------------|-----------------------------------------------------------------------|------------------------|
-| GET    | /api/ordenes                  | Listar órdenes (paginado con `page`/`limit`, filtros `id_moto`, `id_mecanico`, `estado`) | Cualquier usuario activo|
-| GET    | /api/ordenes/:id              | Obtener orden individual por ID (incluye placa_moto, nombre_mecanico y detalle de repuestos) | Cualquier usuario activo|
-| POST   | /api/ordenes                  | Crear orden (valida mecánico empleado, stock de repuestos, descuenta stock, autocalcula total, transaccional) | Admin y Empleado       |
-| PUT    | /api/ordenes/:id              | Actualizar orden (sobrescribe detalles de repuestos devolviendo stock antiguo, no actualizable si está 'Entregado') | Admin y Empleado       |
-| DELETE | /api/ordenes/:id              | Eliminar orden (devuelve el stock de todos los repuestos asociados al inventario) | Solo Admin             |
+| Método | Ruta                          | Descripción                                                                                                                                                                     | Permisos               |
+|--------|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| GET    | /api/ordenes                  | Listar órdenes (paginado con `page`/`limit`, filtros `id_moto`, `id_mecanico`, `estado`)                                                                                        | Cualquier usuario activo|
+| GET    | /api/ordenes/:id              | Obtener orden individual por ID (incluye `placa_moto`, `nombre_mecanico`, y detalle de repuestos con `nombre_Respuesto`)                                                         | Cualquier usuario activo|
+| GET    | /api/ordenes/:id/pdf          | Generar y descargar factura en PDF de la orden. Nombre del archivo: `[placa]_[fechaEntrega]_[id].pdf`. Incluye datos de la moto (marca, modelo, color, cilindraje), diagnóstico, tabla de repuestos y totales | Cualquier usuario activo|
+| POST   | /api/ordenes                  | Crear orden. Valida mecánico con rol `empleado`, stock de repuestos, descuenta stock automáticamente. No permite `id_repuesto` duplicados en `detalleOrden`. Estado inicial: `Recepcion`. Transaccional | Admin y Empleado       |
+| PUT    | /api/ordenes/:id              | Actualizar orden. **`id_moto` no se puede modificar.** Restaura stock anterior y valida/descuenta nuevo stock. No actualizable si está en estado `Entregado`. No permite `id_repuesto` duplicados en `detalleOrden` | Admin y Empleado       |
+| DELETE | /api/ordenes/:id              | Eliminar orden (devuelve el stock de todos los repuestos asociados al inventario antes de eliminar)                                                                               | Solo Admin             |
 
 Swagger docs: http://localhost:3000/api-docs
 
@@ -257,3 +258,8 @@ Para desarrollo local, copiar `.env.example` a `.env` y ajustar las credenciales
 - **Validaciones de contraseña**: Las contraseñas requieren mínimo 8 caracteres, una mayúscula, un número y un carácter especial.
 - **Usuarios admin**: Los usuarios con rol admin no pueden ser activados/desactivados ni tener su contraseña reseteada por otros admins.
 - **Swagger UI**: Disponible en `/api-docs` una vez que la app está corriendo.
+- **Protección de eliminación**: Los endpoints DELETE de `User`, `Moto` y `Repuesto` verifican activamente relaciones vigentes antes de proceder. Si existen registros dependientes (ej. motos de un usuario, órdenes de una moto, detalles de un repuesto), la eliminación es bloqueada con `HTTP 400`.
+- **Generación de PDF**: El endpoint `GET /api/ordenes/:id/pdf` utiliza `pdfkit` para generar un documento A4 estilizado con paleta corporativa. El nombre del archivo descargado sigue el formato `[placa]_[fechaEntrega_o_Pendiente]_[id].pdf`.
+- **Restricción en actualización de orden**: Al actualizar una orden (`PUT /api/ordenes/:id`), el campo `id_moto` **no debe enviarse** ni se procesa. La moto queda permanentemente ligada a la orden desde su creación.
+- **Sin duplicados en detalles**: En los endpoints de creación y actualización de órdenes, el array `detalleOrden` no puede contener el mismo `id_repuesto` más de una vez. En caso de duplicados, se retorna `HTTP 400`.
+- **Generación de total automática**: El campo `total` de la orden se calcula automáticamente como `valor_mano_obra + Σ(cantidad × precio_repuesto)`. El campo `subtotal` de cada detalle también se calcula automáticamente.
