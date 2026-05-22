@@ -17,12 +17,30 @@
   --color-brand-accent-yellow: hsl(45, 93%, 47%);
   
   --animate-float: float 6s ease-in-out infinite;
+  --animate-float-subtle: float-subtle 4s ease-in-out infinite;
+  --animate-bounce-subtle: bounce-subtle 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-modal-in: modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   --animate-pulse-subtle: pulse-subtle 3s ease-in-out infinite;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
+}
+
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes bounce-subtle {
+  0% { transform: scale(0.9) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes modal-in {
+  0% { transform: scale(0.95) translateY(15px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 @keyframes pulse-subtle {

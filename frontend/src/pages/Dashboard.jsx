@@ -54,6 +54,18 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Estados para refinamiento visual (Toast y Password visibility)
+  const [toast, setToast] = useState(null); // { message: '', type: 'success' | 'error' }
+  const [showClientePassword, setShowClientePassword] = useState(false);
+  const [showUsuarioPassword, setShowUsuarioPassword] = useState(false);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
   // Paginación y búsquedas por pestaña
   const [searchPlaca, setSearchPlaca] = useState('');
   const [motosPage, setMotosPage] = useState(1);
@@ -464,6 +476,7 @@ export default function Dashboard() {
           if (newCliente.password) {
             await usersService.resetPassword(selectedCliente.id, { newPassword: newCliente.password });
           }
+          showToast(`Cliente "${body.nombre}" actualizado con éxito.`, 'success');
           setShowClienteForm(false);
           setSelectedCliente(null);
           setNewCliente({ nombre: '', correo: '', cedula: '', telefono: '', password: '', rol: 'cliente' });
@@ -487,6 +500,7 @@ export default function Dashboard() {
         };
         const res = await usersService.create(body);
         if (res.success) {
+          showToast(`Cliente "${body.nombre}" registrado con éxito.`, 'success');
           setShowClienteForm(false);
           setNewCliente({ nombre: '', correo: '', cedula: '', telefono: '', password: '', rol: 'cliente' });
           fetchAllData();
@@ -519,18 +533,20 @@ export default function Dashboard() {
     if (!confirm(`¿Eliminar al cliente ${cliente.nombre}? Esto podría dejar sin dueño a sus motos asignadas.`)) return;
     const res = await usersService.remove(cliente.id);
     if (res.success) {
+      showToast(`Cliente "${cliente.nombre}" eliminado con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo eliminar el cliente.');
+      showToast(res.error || 'No se pudo eliminar el cliente.', 'error');
     }
   };
 
   const handleToggleClienteActive = async (cliente) => {
     const res = await usersService.toggleActive(cliente.id);
     if (res.success) {
+      showToast(`Estado del cliente "${cliente.nombre}" actualizado con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo cambiar el estado del cliente.');
+      showToast(res.error || 'No se pudo cambiar el estado del cliente.', 'error');
     }
   };
 
@@ -561,12 +577,13 @@ export default function Dashboard() {
           if (newUsuario.password) {
             await usersService.resetPassword(selectedUsuario.id, { newPassword: newUsuario.password });
           }
+          showToast(`Usuario "${body.nombre}" actualizado con éxito.`, 'success');
           setShowUsuarioForm(false);
           setSelectedUsuario(null);
           setNewUsuario({ nombre: '', correo: '', cedula: '', telefono: '', password: '', rol: 'empleado' });
           fetchAllData();
         } else {
-          setUsuarioFormError(res.error || 'No se pudo actualizar el usuario.');
+          setUsuarioFormError(res.error || 'No se pudo actualizar the usuario.');
         }
       } else {
         if (!newUsuario.password) {
@@ -584,6 +601,7 @@ export default function Dashboard() {
         };
         const res = await usersService.create(body);
         if (res.success) {
+          showToast(`Usuario "${body.nombre}" registrado con éxito.`, 'success');
           setShowUsuarioForm(false);
           setNewUsuario({ nombre: '', correo: '', cedula: '', telefono: '', password: '', rol: 'empleado' });
           fetchAllData();
@@ -614,32 +632,34 @@ export default function Dashboard() {
 
   const handleDeleteUsuario = async (usuario) => {
     if (usuario.id === user.id) {
-      alert('No podés eliminar tu propia cuenta de administrador.');
+      showToast('No podés eliminar tu propia cuenta de administrador.', 'error');
       return;
     }
     if (!confirm(`¿Eliminar al usuario ${usuario.nombre}? Esta acción es irreversible.`)) return;
     const res = await usersService.remove(usuario.id);
     if (res.success) {
+      showToast(`Usuario "${usuario.nombre}" eliminado con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo eliminar el usuario.');
+      showToast(res.error || 'No se pudo eliminar el usuario.', 'error');
     }
   };
 
   const handleToggleUsuarioActive = async (usuario) => {
     if (usuario.id === user.id) {
-      alert('No podés desactivar tu propia cuenta de administrador.');
+      showToast('No podés desactivar tu propia cuenta de administrador.', 'error');
       return;
     }
     if (usuario.rol === 'admin') {
-      alert('No se puede activar/desactivar un administrador.');
+      showToast('No se puede activar/desactivar un administrador.', 'error');
       return;
     }
     const res = await usersService.toggleActive(usuario.id);
     if (res.success) {
+      showToast(`Estado del usuario "${usuario.nombre}" actualizado con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo cambiar el estado del usuario.');
+      showToast(res.error || 'No se pudo cambiar el estado del usuario.', 'error');
     }
   };
 
@@ -664,6 +684,7 @@ export default function Dashboard() {
       if (selectedMoto) {
         const res = await motosService.update(selectedMoto.id, body);
         if (res.success) {
+          showToast(`Motocicleta "${body.placa}" actualizada con éxito.`, 'success');
           setShowMotoForm(false);
           setSelectedMoto(null);
           setNewMoto({ placa: '', marca: '', modelo: '', color: '', cilindraje: '', anio: new Date().getFullYear(), id_propietario: '' });
@@ -674,6 +695,7 @@ export default function Dashboard() {
       } else {
         const res = await motosService.create(body);
         if (res.success) {
+          showToast(`Motocicleta "${body.placa}" registrada con éxito.`, 'success');
           setShowMotoForm(false);
           setNewMoto({ placa: '', marca: '', modelo: '', color: '', cilindraje: '', anio: new Date().getFullYear(), id_propietario: '' });
           fetchAllData();
@@ -707,9 +729,10 @@ export default function Dashboard() {
     if (!confirm(`¿Eliminar la motocicleta con placa ${moto.placa}? Esta acción es irreversible.`)) return;
     const res = await motosService.remove(moto.id);
     if (res.success) {
+      showToast(`Motocicleta "${moto.placa}" eliminada con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo eliminar la moto.');
+      showToast(res.error || 'No se pudo eliminar la moto.', 'error');
     }
   };
 
@@ -748,6 +771,7 @@ export default function Dashboard() {
         // ACTUALIZACIÓN
         const res = await repuestosService.update(selectedRepuesto.id_repuesto, body);
         if (res.success) {
+          showToast(`Repuesto "${body.nombre}" actualizado con éxito.`, 'success');
           setShowRepuestoForm(false);
           setSelectedRepuesto(null);
           setNewRepuesto({ referencia: '', nombre: '', stock: 0, precio: 0 });
@@ -759,6 +783,7 @@ export default function Dashboard() {
         // CREACIÓN
         const res = await repuestosService.create(body);
         if (res.success) {
+          showToast(`Repuesto "${body.nombre}" registrado con éxito.`, 'success');
           setShowRepuestoForm(false);
           setNewRepuesto({ referencia: '', nombre: '', stock: 0, precio: 0 });
           fetchAllData();
@@ -789,16 +814,17 @@ export default function Dashboard() {
     if (!confirm(`¿Eliminar el repuesto "${rep.nombre}" (${rep.referencia})?`)) return;
     const res = await repuestosService.remove(rep.id_repuesto);
     if (res.success) {
+      showToast(`Repuesto "${rep.nombre}" eliminado con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo eliminar el repuesto.');
+      showToast(res.error || 'No se pudo eliminar el repuesto.', 'error');
     }
   };
 
   const handleQuickAddStock = async (rep, amount) => {
     const newStock = rep.stock + amount;
     if (newStock < 0) {
-      alert('El stock no puede quedar negativo.');
+      showToast('El stock no puede quedar negativo.', 'error');
       return;
     }
     const body = {
@@ -809,9 +835,10 @@ export default function Dashboard() {
     };
     const res = await repuestosService.update(rep.id_repuesto, body);
     if (res.success) {
+      showToast(`Stock de "${rep.nombre}" ajustado a ${newStock} unidades.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo ajustar el stock.');
+      showToast(res.error || 'No se pudo ajustar el stock.', 'error');
     }
   };
 
@@ -867,6 +894,7 @@ export default function Dashboard() {
         };
         const res = await ordenesService.update(selectedOrden.id_orden_trabajo, putBody);
         if (res.success) {
+          showToast(`Orden #${selectedOrden.id_orden_trabajo} actualizada con éxito.`, 'success');
           setShowOrdenForm(false);
           setSelectedOrden(null);
           setNewOrden({
@@ -885,6 +913,7 @@ export default function Dashboard() {
       } else {
         const res = await ordenesService.create(body);
         if (res.success) {
+          showToast(`Orden de trabajo registrada con éxito.`, 'success');
           setShowOrdenForm(false);
           setNewOrden({
             id_moto: '',
@@ -955,9 +984,10 @@ export default function Dashboard() {
     if (!confirm(`¿Eliminar la orden de trabajo #${orden.id_orden_trabajo}? Se devolverán los repuestos asignados al inventario.`)) return;
     const res = await ordenesService.remove(orden.id_orden_trabajo);
     if (res.success) {
+      showToast(`Orden #${orden.id_orden_trabajo} eliminada con éxito.`, 'success');
       fetchAllData();
     } else {
-      alert(res.error || 'No se pudo eliminar la orden de trabajo.');
+      showToast(res.error || 'No se pudo eliminar la orden de trabajo.', 'error');
     }
   };
 
@@ -965,7 +995,7 @@ export default function Dashboard() {
     try {
       const getRes = await ordenesService.getById(orden.id_orden_trabajo);
       if (!getRes.success) {
-        alert(getRes.error || 'No se pudo consultar el estado actual.');
+        showToast(getRes.error || 'No se pudo consultar el estado actual.', 'error');
         return;
       }
       const full = getRes.data;
@@ -984,12 +1014,13 @@ export default function Dashboard() {
 
       const res = await ordenesService.update(orden.id_orden_trabajo, body);
       if (res.success) {
+        showToast(`Estado de la orden #${orden.id_orden_trabajo} actualizado a "${nuevoEstado}".`, 'success');
         fetchAllData();
       } else {
-        alert(res.error || 'No se pudo actualizar el estado.');
+        showToast(res.error || 'No se pudo actualizar el estado.', 'error');
       }
     } catch (err) {
-      alert('Error al intentar actualizar el estado.');
+      showToast('Error al intentar actualizar el estado.', 'error');
     }
   };
 
@@ -1016,8 +1047,9 @@ export default function Dashboard() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      showToast('PDF comercial descargado con éxito.', 'success');
     } catch (err) {
-      alert(err.message || 'Error al generar la descarga del PDF.');
+      showToast(err.message || 'Error al generar la descarga del PDF.', 'error');
     }
   };
 
@@ -1026,7 +1058,7 @@ export default function Dashboard() {
     const cant = parseInt(tempRepuesto.cantidad);
 
     if (!idRep || cant <= 0) {
-      alert('Selecciona un repuesto e introduce una cantidad válida.');
+      showToast('Selecciona un repuesto e introduce una cantidad válida.', 'error');
       return;
     }
 
@@ -1034,13 +1066,13 @@ export default function Dashboard() {
     if (!rep) return;
 
     if (cant > rep.stock) {
-      alert(`Stock insuficiente en inventario. Stock real disponible: ${rep.stock}`);
+      showToast(`Stock insuficiente en inventario. Stock real disponible: ${rep.stock}`, 'error');
       return;
     }
 
     const exists = newOrden.detalleOrden.find(d => d.id_repuesto === idRep);
     if (exists) {
-      alert('Este repuesto ya se encuentra agregado en la lista.');
+      showToast('Este repuesto ya se encuentra agregado en la lista.', 'error');
       return;
     }
 
@@ -1616,105 +1648,7 @@ export default function Dashboard() {
               ────────────────────────────────────────────────────────────────── */}
           {activeTab === 'clientes' && (
             <div className="space-y-6">
-              {showClienteForm && canEditClientes && (
-                <div className="glass rounded-2xl border border-white/10 p-6 animate-float-subtle">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-white">
-                      {selectedCliente ? `Editar Cliente: ${selectedCliente.nombre}` : 'Registrar Nuevo Cliente'}
-                    </h3>
-                    <button 
-                      onClick={() => { setShowClienteForm(false); setSelectedCliente(null); }} 
-                      className="text-xs text-brand-text-muted hover:text-white"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
 
-                  {clienteFormError && (
-                    <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
-                      {clienteFormError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreateOrUpdateCliente} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre Completo</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Juan Pérez"
-                        value={newCliente.nombre}
-                        onChange={e => setNewCliente(prev => ({ ...prev, nombre: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="Ej. juan@correo.com"
-                        value={newCliente.correo}
-                        onChange={e => setNewCliente(prev => ({ ...prev, correo: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cédula de Ciudadanía</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. 1020304050"
-                        value={newCliente.cedula}
-                        onChange={e => setNewCliente(prev => ({ ...prev, cedula: e.target.value.replace(/\D/g, '') }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Teléfono de Contacto</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. 3123456789"
-                        value={newCliente.telefono}
-                        onChange={e => setNewCliente(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">
-                        {selectedCliente ? 'Nueva Contraseña (Dejar vacío para mantener)' : 'Contraseña de Acceso'}
-                      </label>
-                      <input
-                        type="password"
-                        required={!selectedCliente}
-                        placeholder="Mínimo 8 car., Mayúscula, Número y Especial"
-                        value={newCliente.password}
-                        onChange={e => setNewCliente(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                      <span className="text-[9px] text-brand-text-muted block mt-1">Requisitos: Mínimo 8 caracteres, 1 Mayúscula, 1 Número y 1 Carácter Especial.</span>
-                    </div>
-
-                    <div className="sm:col-span-2 flex justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => { setShowClienteForm(false); setSelectedCliente(null); }}
-                        className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={clienteFormLoading}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
-                      >
-                        {clienteFormLoading ? 'Guardando...' : 'Guardar Cliente'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
 
               {/* Listado con filtros y buscador */}
               <div className="glass rounded-2xl border border-white/5 overflow-hidden">
@@ -1816,28 +1750,32 @@ export default function Dashboard() {
                               </td>
                               {canEditClientes && (
                                 <td className="px-5 py-4 text-right flex justify-end gap-2">
-                                  <button
-                                    onClick={() => handleToggleClienteActive(c)}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                                      c.is_active 
-                                        ? 'text-brand-accent-yellow border-brand-accent-yellow/20 bg-brand-accent-yellow/5 hover:bg-brand-accent-yellow/20' 
-                                        : 'text-brand-accent-green border-brand-accent-green/20 bg-brand-accent-green/5 hover:bg-brand-accent-green/20'
-                                    }`}
-                                  >
-                                    {c.is_active ? 'Desactivar' : 'Activar'}
-                                  </button>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => handleToggleClienteActive(c)}
+                                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                                        c.is_active 
+                                          ? 'text-brand-accent-yellow border-brand-accent-yellow/20 bg-brand-accent-yellow/5 hover:bg-brand-accent-yellow/20' 
+                                          : 'text-brand-accent-green border-brand-accent-green/20 bg-brand-accent-green/5 hover:bg-brand-accent-green/20'
+                                      }`}
+                                    >
+                                      {c.is_active ? 'Desactivar' : 'Activar'}
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleEditClienteClick(c)}
                                     className="text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-2 py-1 rounded-lg hover:bg-brand-primary/20 transition-all text-[10px] cursor-pointer"
                                   >
                                     Editar
                                   </button>
-                                  <button
-                                    onClick={() => handleDeleteCliente(c)}
-                                    className="text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 px-2 py-1 rounded-lg hover:bg-brand-accent-red/20 transition-all text-[10px] cursor-pointer"
-                                  >
-                                    Eliminar
-                                  </button>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={() => handleDeleteCliente(c)}
+                                      className="text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 px-2 py-1 rounded-lg hover:bg-brand-accent-red/20 transition-all text-[10px] cursor-pointer"
+                                    >
+                                      Eliminar
+                                    </button>
+                                  )}
                                 </td>
                               )}
                             </tr>
@@ -1856,121 +1794,7 @@ export default function Dashboard() {
               ────────────────────────────────────────────────────────────────── */}
           {activeTab === 'usuarios' && isAdmin && (
             <div className="space-y-6">
-              {showUsuarioForm && canEditUsuarios && (
-                <div className="glass rounded-2xl border border-white/10 p-6 animate-float-subtle">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-white">
-                      {selectedUsuario ? `Editar Usuario: ${selectedUsuario.nombre}` : 'Registrar Nuevo Usuario del Sistema'}
-                    </h3>
-                    <button 
-                      onClick={() => { setShowUsuarioForm(false); setSelectedUsuario(null); }} 
-                      className="text-xs text-brand-text-muted hover:text-white"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-
-                  {usuarioFormError && (
-                    <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
-                      {usuarioFormError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreateOrUpdateUsuario} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre Completo</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Pedro Gómez"
-                        value={newUsuario.nombre}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, nombre: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="Ej. pedro@motoboss.com"
-                        value={newUsuario.correo}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, correo: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cédula</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. 987654321"
-                        value={newUsuario.cedula}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, cedula: e.target.value.replace(/\D/g, '') }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Teléfono</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. 3009876543"
-                        value={newUsuario.telefono}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Rol asignado</label>
-                      <select
-                        disabled={!!selectedUsuario}
-                        value={newUsuario.rol}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, rol: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
-                      >
-                        <option value="empleado">Mecánico (Empleado de Soporte)</option>
-                        <option value="cliente">Cliente (Dueño de Moto)</option>
-                      </select>
-                      {selectedUsuario && (
-                        <span className="text-[9px] text-brand-accent-yellow mt-1 block">El rol no puede cambiarse tras la creación.</span>
-                      )}
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">
-                        {selectedUsuario ? 'Nueva Contraseña (Dejar vacío para mantener)' : 'Contraseña de Acceso'}
-                      </label>
-                      <input
-                        type="password"
-                        required={!selectedUsuario}
-                        placeholder="Mínimo 8 car., Mayúscula, Número y Especial"
-                        value={newUsuario.password}
-                        onChange={e => setNewUsuario(prev => ({ ...prev, password: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                      <span className="text-[9px] text-brand-text-muted block mt-1">Requisitos: Mínimo 8 caracteres, 1 Mayúscula, 1 Número y 1 Carácter Especial.</span>
-                    </div>
-
-                    <div className="sm:col-span-2 flex justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => { setShowUsuarioForm(false); setSelectedUsuario(null); }}
-                        className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={usuarioFormLoading}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
-                      >
-                        {usuarioFormLoading ? 'Guardando...' : 'Guardar Usuario'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-
+              
               {/* Listado con filtros y buscador */}
               <div className="glass rounded-2xl border border-white/5 overflow-hidden">
                 <div className="p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
@@ -2122,131 +1946,7 @@ export default function Dashboard() {
               ────────────────────────────────────────────────────────────────── */}
           {activeTab === 'motos' && (
             <div className="space-y-6">
-              {showMotoForm && canEditMotos && (
-                <div className="glass rounded-2xl border border-white/10 p-6 animate-float-subtle">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-white">
-                      {selectedMoto ? `Editar Motocicleta: ${selectedMoto.placa}` : 'Registrar Nueva Motocicleta'}
-                    </h3>
-                    <button 
-                      onClick={() => { setShowMotoForm(false); setSelectedMoto(null); }} 
-                      className="text-xs text-brand-text-muted hover:text-white"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
 
-                  {motoFormError && (
-                    <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
-                      {motoFormError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreateOrUpdateMoto} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Placa</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. ABC-123"
-                        disabled={!!selectedMoto}
-                        value={newMoto.placa}
-                        onChange={e => setNewMoto(prev => ({ ...prev, placa: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Marca</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Yamaha"
-                        value={newMoto.marca}
-                        onChange={e => setNewMoto(prev => ({ ...prev, marca: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Modelo</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. MT-09"
-                        value={newMoto.modelo}
-                        onChange={e => setNewMoto(prev => ({ ...prev, modelo: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Color</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Negro Mate"
-                        value={newMoto.color}
-                        onChange={e => setNewMoto(prev => ({ ...prev, color: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cilindraje</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. 847cc"
-                        value={newMoto.cilindraje}
-                        onChange={e => setNewMoto(prev => ({ ...prev, cilindraje: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Año Modelo</label>
-                      <input
-                        type="number"
-                        required
-                        min="1901"
-                        placeholder="Ej. 2024"
-                        value={newMoto.anio}
-                        onChange={e => setNewMoto(prev => ({ ...prev, anio: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Propietario / Cliente</label>
-                      <select
-                        required
-                        value={newMoto.id_propietario}
-                        onChange={e => setNewMoto(prev => ({ ...prev, id_propietario: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      >
-                        <option value="">-- Seleccionar Propietario --</option>
-                        {allUsers.filter(u => u.rol === 'cliente').map(u => (
-                          <option key={u.id} value={u.id} className="bg-brand-surface text-white">
-                            {u.nombre} ({u.correo})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="lg:col-span-3 flex justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => { setShowMotoForm(false); setSelectedMoto(null); }}
-                        className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={motoFormLoading}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
-                      >
-                        {motoFormLoading ? 'Guardando...' : 'Guardar Motocicleta'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
 
               {/* Tabla de motos */}
               <div className="glass rounded-2xl border border-white/5 overflow-hidden">
@@ -2369,95 +2069,7 @@ export default function Dashboard() {
             <div className="space-y-6">
 
               {/* Formulario Repuesto */}
-              {showRepuestoForm && canEditRepuestos && (
-                <div className="glass rounded-2xl border border-white/10 p-6 animate-float-subtle">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-white">
-                      {selectedRepuesto ? `Modificar Repuesto: ${selectedRepuesto.referencia}` : 'Cargar Nuevo Repuesto al Inventario'}
-                    </h3>
-                    <button 
-                      onClick={() => { setShowRepuestoForm(false); setSelectedRepuesto(null); }} 
-                      className="text-xs text-brand-text-muted hover:text-white"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
 
-                  {repuestoFormError && (
-                    <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
-                      {repuestoFormError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreateOrUpdateRepuesto} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider font-mono">Referencia Única</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. REF-50023"
-                        disabled={!!selectedRepuesto}
-                        value={newRepuesto.referencia}
-                        onChange={e => setNewRepuesto(prev => ({ ...prev, referencia: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre del Repuesto</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Pastillas Brembo Delanteras"
-                        value={newRepuesto.nombre}
-                        onChange={e => setNewRepuesto(prev => ({ ...prev, nombre: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cantidad en Stock</label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        placeholder="Ej. 15"
-                        value={newRepuesto.stock}
-                        onChange={e => setNewRepuesto(prev => ({ ...prev, stock: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Precio Unitario (COP)</label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        step="0.01"
-                        placeholder="Ej. 120000"
-                        value={newRepuesto.precio}
-                        onChange={e => setNewRepuesto(prev => ({ ...prev, precio: e.target.value }))}
-                        className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="lg:col-span-4 flex justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => { setShowRepuestoForm(false); setSelectedRepuesto(null); }}
-                        className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={repuestoFormLoading}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
-                      >
-                        {repuestoFormLoading ? 'Guardando...' : 'Guardar Repuesto'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
 
               {/* Tabla de repuestos */}
               <div className="glass rounded-2xl border border-white/5 overflow-hidden">
@@ -2608,265 +2220,6 @@ export default function Dashboard() {
               ────────────────────────────────────────────────────────────────── */}
           {activeTab === 'ordenes' && (
             <div className="space-y-6">
-
-              {/* Formulario de Orden de Trabajo */}
-              {showOrdenForm && canEditOrdenes && (
-                <div className="glass rounded-2xl border border-white/10 p-6 animate-float-subtle">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-white">
-                      {selectedOrden ? `Modificar Orden de Trabajo: #${selectedOrden.id_orden_trabajo}` : 'Registrar Nueva Orden de Trabajo'}
-                    </h3>
-                    <button 
-                      onClick={() => { setShowOrdenForm(false); setSelectedOrden(null); }} 
-                      className="text-xs text-brand-text-muted hover:text-white cursor-pointer"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-
-                  {ordenFormError && (
-                    <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
-                      {ordenFormError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreateOrUpdateOrden} className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Selección de Motocicleta */}
-                      <div>
-                        <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Motocicleta (Placa)</label>
-                        <select
-                          required
-                          disabled={!!selectedOrden}
-                          value={newOrden.id_moto}
-                          onChange={e => setNewOrden(prev => ({ ...prev, id_moto: e.target.value }))}
-                          className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
-                        >
-                          <option value="">-- Seleccionar Moto --</option>
-                          {motos.map(m => (
-                            <option key={m.id} value={m.id} className="bg-brand-surface text-white">
-                              {m.placa} - {m.marca} {m.modelo}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Selección de Mecánico */}
-                      <div>
-                        <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Mecánico Asignado</label>
-                        <select
-                          required
-                          value={newOrden.id_mecanico}
-                          onChange={e => setNewOrden(prev => ({ ...prev, id_mecanico: e.target.value }))}
-                          className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                        >
-                          <option value="">-- Seleccionar Mecánico --</option>
-                          {allUsers.filter(u => u.rol === 'empleado' || u.rol === 'admin').map(u => (
-                            <option key={u.id} value={u.id} className="bg-brand-surface text-white">
-                              {u.nombre} ({u.rol === 'admin' ? 'Admin' : 'Mecánico'})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Fecha de Ingreso */}
-                      <div>
-                        <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Fecha de Ingreso</label>
-                        <input
-                          type="datetime-local"
-                          required
-                          value={newOrden.fecha_ingreso}
-                          onChange={e => setNewOrden(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
-                          className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      {/* Diagnóstico */}
-                      <div className="lg:col-span-2">
-                        <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Diagnóstico Técnico Inicial</label>
-                        <textarea
-                          required
-                          rows="4"
-                          placeholder="Introduce el diagnóstico detallado, síntomas reportados por el cliente y fallas encontradas..."
-                          value={newOrden.diagnostico}
-                          onChange={e => setNewOrden(prev => ({ ...prev, diagnostico: e.target.value }))}
-                          className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all resize-none"
-                        ></textarea>
-                      </div>
-
-                      {/* Estado y Mano de Obra */}
-                      <div className="space-y-4">
-                        {selectedOrden && (
-                          <div>
-                            <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Estado de la Orden</label>
-                            <select
-                              value={newOrden.estado}
-                              disabled={selectedOrden.estado === 'Entregado'}
-                              onChange={e => setNewOrden(prev => ({ ...prev, estado: e.target.value }))}
-                              className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
-                            >
-                              <option value="Recepcion">Recepcion</option>
-                              <option value="Diagnostico">Diagnostico</option>
-                              <option value="Cotizacion">Cotizacion</option>
-                              <option value="Reparacion">Reparacion</option>
-                              <option value="Entregado">Entregado</option>
-                            </select>
-                          </div>
-                        )}
-                        <div>
-                          <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Valor Mano de Obra (COP)</label>
-                          <input
-                            type="number"
-                            required
-                            min="0"
-                            placeholder="Ej. 80000"
-                            value={newOrden.valor_mano_obra}
-                            onChange={e => setNewOrden(prev => ({ ...prev, valor_mano_obra: e.target.value }))}
-                            className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* CARRITO DE REPUESTOS / CONSUMOS */}
-                    <div className="border-t border-white/5 pt-4">
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                        Repuestos Consumidos (Carrito de Repuestos)
-                      </h4>
-
-                      {/* Agregar repuesto */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end mb-4 bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                        <div className="sm:col-span-2">
-                          <label className="block text-[9px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Seleccionar Repuesto del Inventario</label>
-                          <select
-                            value={tempRepuesto.id_repuesto}
-                            onChange={e => setTempRepuesto(prev => ({ ...prev, id_repuesto: e.target.value }))}
-                            className="w-full bg-brand-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                          >
-                            <option value="">-- Seleccionar Repuesto --</option>
-                            {repuestos.map(r => (
-                              <option key={r.id_repuesto} value={r.id_repuesto} className="bg-brand-surface text-white">
-                                {r.referencia} - {r.nombre} (Stock: {r.stock} u. | {r.precio.toLocaleString('es-CO')} COP)
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <div className="w-24 shrink-0">
-                            <label className="block text-[9px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cantidad</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={tempRepuesto.cantidad}
-                              onChange={e => setTempRepuesto(prev => ({ ...prev, cantidad: e.target.value }))}
-                              className="w-full bg-brand-bg border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleAddRepuestoToOrden}
-                            className="bg-brand-primary/20 hover:bg-brand-primary text-brand-primary hover:text-white font-bold p-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer h-[38px] flex-1 shrink-0"
-                          >
-                            Agregar
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Lista de repuestos agregados */}
-                      <div className="overflow-hidden border border-white/5 rounded-xl mb-4">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-brand-surface/40 text-[9px] text-brand-text-muted uppercase tracking-wider border-b border-white/5">
-                              <th className="px-4 py-2.5">Repuesto</th>
-                              <th className="px-4 py-2.5 text-right">Precio Unitario</th>
-                              <th className="px-4 py-2.5 text-center">Cantidad</th>
-                              <th className="px-4 py-2.5 text-right">Subtotal</th>
-                              <th className="px-4 py-2.5 text-right">Acción</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/5">
-                            {newOrden.detalleOrden.length === 0 ? (
-                              <tr>
-                                <td colSpan="5" className="px-4 py-6 text-center text-brand-text-muted text-[11px]">
-                                  No se han cargado repuestos a esta orden.
-                                </td>
-                              </tr>
-                            ) : (
-                              newOrden.detalleOrden.map(d => (
-                                <tr key={d.id_repuesto} className="hover:bg-white/[0.01] transition-colors">
-                                  <td className="px-4 py-3 font-semibold text-white">
-                                    {d.nombre_Respuesto || `ID ${d.id_repuesto}`}
-                                  </td>
-                                  <td className="px-4 py-3 text-right font-mono text-brand-text-muted">
-                                    {d.precio.toLocaleString('es-CO')} COP
-                                  </td>
-                                  <td className="px-4 py-3 text-center font-mono text-white font-bold">
-                                    {d.cantidad} u.
-                                  </td>
-                                  <td className="px-4 py-3 text-right font-mono text-brand-primary font-bold">
-                                    {d.subtotal.toLocaleString('es-CO')} COP
-                                  </td>
-                                  <td className="px-4 py-3 text-right">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveRepuestoFromOrden(d.id_repuesto)}
-                                      className="text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 px-2 py-0.5 rounded hover:bg-brand-accent-red/20 transition-all text-[10px] cursor-pointer"
-                                    >
-                                      Remover
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Totalizador en vivo */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-brand-surface/40 p-4 rounded-xl border border-white/5">
-                        <div className="text-[11px] text-brand-text-muted">
-                          Mano de obra: <strong className="text-white font-mono">{parseFloat(newOrden.valor_mano_obra || 0).toLocaleString('es-CO')} COP</strong><br />
-                          Repuestos: <strong className="text-white font-mono">
-                            {newOrden.detalleOrden.reduce((acc, curr) => acc + curr.subtotal, 0).toLocaleString('es-CO')} COP
-                          </strong>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] text-brand-text-muted uppercase font-bold tracking-wider block">Total General Estimado</span>
-                          <h3 className="text-2xl font-black text-brand-primary font-mono mt-1">
-                            {(
-                              parseFloat(newOrden.valor_mano_obra || 0) + 
-                              newOrden.detalleOrden.reduce((acc, curr) => acc + curr.subtotal, 0)
-                            ).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })} COP
-                          </h3>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Botones de Envío */}
-                    <div className="flex justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => { setShowOrdenForm(false); setSelectedOrden(null); }}
-                        className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={ordenFormLoading}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
-                      >
-                        {ordenFormLoading ? 'Procesando...' : (selectedOrden ? 'Guardar Cambios' : 'Registrar Orden')}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
 
               {/* Buscador y Control de Órdenes */}
               <div className="glass rounded-2xl border border-white/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between mb-6">
@@ -3135,6 +2488,742 @@ export default function Dashboard() {
         </footer>
       </div>
 
+      {/* ── FORMULARIOS MODALES CRUD GLOBALMENTE FLOTANTES ── */}
+
+      {/* 1. Modal Registro/Edición Cliente */}
+      {showClienteForm && canEditClientes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="glass w-full max-w-2xl rounded-2xl border border-white/10 p-6 shadow-2xl relative my-8 animate-modal-in">
+            <button 
+              onClick={() => { setShowClienteForm(false); setSelectedCliente(null); }} 
+              className="absolute top-4 right-4 text-brand-text-muted hover:text-white transition-colors text-lg cursor-pointer"
+            >
+              ✕
+            </button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">
+                {selectedCliente ? `Editar Cliente: ${selectedCliente.nombre}` : 'Registrar Nuevo Cliente'}
+              </h3>
+            </div>
+
+            {clienteFormError && (
+              <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
+                {clienteFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrUpdateCliente} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Juan Pérez"
+                  value={newCliente.nombre}
+                  onChange={e => setNewCliente(prev => ({ ...prev, nombre: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Ej. juan@correo.com"
+                  value={newCliente.correo}
+                  onChange={e => setNewCliente(prev => ({ ...prev, correo: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cédula de Ciudadanía</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 1020304050"
+                  value={newCliente.cedula}
+                  onChange={e => setNewCliente(prev => ({ ...prev, cedula: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Teléfono de Contacto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 3123456789"
+                  value={newCliente.telefono}
+                  onChange={e => setNewCliente(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">
+                  {selectedCliente ? 'Nueva Contraseña (Dejar vacío para mantener)' : 'Contraseña de Acceso'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showClientePassword ? "text" : "password"}
+                    required={!selectedCliente}
+                    placeholder="Mínimo 8 car., Mayúscula, Número y Especial"
+                    value={newCliente.password}
+                    onChange={e => setNewCliente(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowClientePassword(!showClientePassword)}
+                    className="absolute right-4 top-3 text-brand-text-muted hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showClientePassword ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <span className="text-[9px] text-brand-text-muted block mt-1">Requisitos: Mínimo 8 caracteres, 1 Mayúscula, 1 Número y 1 Carácter Especial.</span>
+              </div>
+
+              <div className="sm:col-span-2 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowClienteForm(false); setSelectedCliente(null); }}
+                  className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={clienteFormLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  {clienteFormLoading ? 'Guardando...' : 'Guardar Cliente'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Modal Registro/Edición Usuario */}
+      {showUsuarioForm && canEditUsuarios && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="glass w-full max-w-2xl rounded-2xl border border-white/10 p-6 shadow-2xl relative my-8 animate-modal-in">
+            <button 
+              onClick={() => { setShowUsuarioForm(false); setSelectedUsuario(null); }} 
+              className="absolute top-4 right-4 text-brand-text-muted hover:text-white transition-colors text-lg cursor-pointer"
+            >
+              ✕
+            </button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">
+                {selectedUsuario ? `Editar Usuario: ${selectedUsuario.nombre}` : 'Registrar Nuevo Usuario del Sistema'}
+              </h3>
+            </div>
+
+            {usuarioFormError && (
+              <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
+                {usuarioFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrUpdateUsuario} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Pedro Gómez"
+                  value={newUsuario.nombre}
+                  onChange={e => setNewUsuario(prev => ({ ...prev, nombre: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Ej. pedro@correo.com"
+                  value={newUsuario.correo}
+                  onChange={e => setNewUsuario(prev => ({ ...prev, correo: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cédula de Ciudadanía</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 1020304050"
+                  value={newUsuario.cedula}
+                  onChange={e => setNewUsuario(prev => ({ ...prev, cedula: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Teléfono de Contacto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 3123456789"
+                  value={newUsuario.telefono}
+                  onChange={e => setNewUsuario(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              
+              {/* Selección de Rol en Creación */}
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Rol de Usuario</label>
+                <select
+                  required
+                  disabled={!!selectedUsuario}
+                  value={newUsuario.rol}
+                  onChange={e => setNewUsuario(prev => ({ ...prev, rol: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
+                >
+                  <option value="empleado">Mecánico (Empleado)</option>
+                  <option value="admin">Administrador</option>
+                  <option value="cliente">Cliente (Rol Acceso)</option>
+                </select>
+              </div>
+
+              {/* Contraseña */}
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">
+                  {selectedUsuario ? 'Nueva Contraseña (Opcional)' : 'Contraseña de Acceso'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showUsuarioPassword ? "text" : "password"}
+                    required={!selectedUsuario}
+                    placeholder="Mínimo 8 car., Mayúscula, Número y Especial"
+                    value={newUsuario.password}
+                    onChange={e => setNewUsuario(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUsuarioPassword(!showUsuarioPassword)}
+                    className="absolute right-4 top-3 text-brand-text-muted hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showUsuarioPassword ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <span className="text-[9px] text-brand-text-muted block mt-1">Requisitos: Mínimo 8 caracteres, 1 Mayúscula, 1 Número y 1 Carácter Especial.</span>
+              </div>
+
+              <div className="sm:col-span-2 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowUsuarioForm(false); setSelectedUsuario(null); }}
+                  className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={usuarioFormLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  {usuarioFormLoading ? 'Guardando...' : 'Guardar Usuario'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Modal Registro/Edición Motocicleta */}
+      {showMotoForm && canEditMotos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="glass w-full max-w-2xl rounded-2xl border border-white/10 p-6 shadow-2xl relative my-8 animate-modal-in">
+            <button 
+              onClick={() => { setShowMotoForm(false); setSelectedMoto(null); }} 
+              className="absolute top-4 right-4 text-brand-text-muted hover:text-white transition-colors text-lg cursor-pointer"
+            >
+              ✕
+            </button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">
+                {selectedMoto ? `Editar Motocicleta: ${selectedMoto.placa}` : 'Registrar Nueva Motocicleta'}
+              </h3>
+            </div>
+
+            {motoFormError && (
+              <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
+                {motoFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrUpdateMoto} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Placa</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. ABC-123"
+                  disabled={!!selectedMoto}
+                  value={newMoto.placa}
+                  onChange={e => setNewMoto(prev => ({ ...prev, placa: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Marca</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Yamaha"
+                  value={newMoto.marca}
+                  onChange={e => setNewMoto(prev => ({ ...prev, marca: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Modelo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. MT-09"
+                  value={newMoto.modelo}
+                  onChange={e => setNewMoto(prev => ({ ...prev, modelo: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Color</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Negro Mate"
+                  value={newMoto.color}
+                  onChange={e => setNewMoto(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cilindraje</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. 847cc"
+                  value={newMoto.cilindraje}
+                  onChange={e => setNewMoto(prev => ({ ...prev, cilindraje: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Año Modelo</label>
+                <input
+                  type="number"
+                  required
+                  min="1901"
+                  placeholder="Ej. 2024"
+                  value={newMoto.anio}
+                  onChange={e => setNewMoto(prev => ({ ...prev, anio: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Propietario / Cliente</label>
+                <select
+                  required
+                  value={newMoto.id_propietario}
+                  onChange={e => setNewMoto(prev => ({ ...prev, id_propietario: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                >
+                  <option value="">-- Seleccionar Propietario --</option>
+                  {allUsers.filter(u => u.rol === 'cliente').map(u => (
+                    <option key={u.id} value={u.id} className="bg-brand-surface text-white">
+                      {u.nombre} ({u.correo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="lg:col-span-3 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowMotoForm(false); setSelectedMoto(null); }}
+                  className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={motoFormLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  {motoFormLoading ? 'Guardando...' : 'Guardar Motocicleta'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Modal Registro/Edición Repuesto */}
+      {showRepuestoForm && canEditRepuestos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="glass w-full max-w-2xl rounded-2xl border border-white/10 p-6 shadow-2xl relative my-8 animate-modal-in">
+            <button 
+              onClick={() => { setShowRepuestoForm(false); setSelectedRepuesto(null); }} 
+              className="absolute top-4 right-4 text-brand-text-muted hover:text-white transition-colors text-lg cursor-pointer"
+            >
+              ✕
+            </button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">
+                {selectedRepuesto ? `Modificar Repuesto: ${selectedRepuesto.referencia}` : 'Cargar Nuevo Repuesto al Inventario'}
+              </h3>
+            </div>
+
+            {repuestoFormError && (
+              <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
+                {repuestoFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrUpdateRepuesto} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider font-mono">Referencia Única</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. REF-50023"
+                  disabled={!!selectedRepuesto}
+                  value={newRepuesto.referencia}
+                  onChange={e => setNewRepuesto(prev => ({ ...prev, referencia: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40 font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Nombre del Repuesto</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Pastillas Brembo Delanteras"
+                  value={newRepuesto.nombre}
+                  onChange={e => setNewRepuesto(prev => ({ ...prev, nombre: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Cantidad en Stock</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  placeholder="Ej. 15"
+                  value={newRepuesto.stock}
+                  onChange={e => setNewRepuesto(prev => ({ ...prev, stock: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Precio Unitario (COP)</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="Ej. 120000"
+                  value={newRepuesto.precio}
+                  onChange={e => setNewRepuesto(prev => ({ ...prev, precio: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+              </div>
+
+              <div className="lg:col-span-4 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowRepuestoForm(false); setSelectedRepuesto(null); }}
+                  className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={repuestoFormLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  {repuestoFormLoading ? 'Guardando...' : 'Guardar Repuesto'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Modal Registro/Edición Orden de Trabajo */}
+      {showOrdenForm && canEditOrdenes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="glass w-full max-w-4xl rounded-2xl border border-white/10 p-6 shadow-2xl relative my-8 animate-modal-in">
+            <button 
+              onClick={() => { setShowOrdenForm(false); setSelectedOrden(null); }} 
+              className="absolute top-4 right-4 text-brand-text-muted hover:text-white transition-colors text-lg cursor-pointer"
+            >
+              ✕
+            </button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">
+                {selectedOrden ? `Modificar Orden de Trabajo: #${selectedOrden.id_orden_trabajo}` : 'Registrar Nueva Orden de Trabajo'}
+              </h3>
+            </div>
+
+            {ordenFormError && (
+              <div className="mb-4 text-xs text-brand-accent-red bg-brand-accent-red/10 border border-brand-accent-red/20 rounded-xl px-4 py-3">
+                {ordenFormError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOrUpdateOrden} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Selección de Motocicleta */}
+                <div>
+                  <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Motocicleta (Placa)</label>
+                  <select
+                    required
+                    disabled={!!selectedOrden}
+                    value={newOrden.id_moto}
+                    onChange={e => setNewOrden(prev => ({ ...prev, id_moto: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all disabled:opacity-40"
+                  >
+                    <option value="">-- Seleccionar Moto --</option>
+                    {motos.map(m => (
+                      <option key={m.id} value={m.id} className="bg-brand-surface text-white">
+                        {m.placa} - {m.marca} {m.modelo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selección de Mecánico */}
+                <div>
+                  <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Mecánico Asignado</label>
+                  <select
+                    required
+                    value={newOrden.id_mecanico}
+                    onChange={e => setNewOrden(prev => ({ ...prev, id_mecanico: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                  >
+                    <option value="">-- Seleccionar Mecánico --</option>
+                    {allUsers.filter(u => u.rol === 'empleado' || u.rol === 'admin').map(u => (
+                      <option key={u.id} value={u.id} className="bg-brand-surface text-white">
+                        {u.nombre} ({u.rol === 'admin' ? 'Admin' : 'Mecánico'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fecha de Ingreso */}
+                <div>
+                  <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Fecha Ingreso</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={newOrden.fecha_ingreso}
+                    onChange={e => setNewOrden(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                  />
+                </div>
+
+                {/* Estado de la orden (sólo visible en modificación) */}
+                {selectedOrden && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Estado Técnico</label>
+                    <select
+                      required
+                      value={newOrden.estado}
+                      onChange={e => setNewOrden(prev => ({ ...prev, estado: e.target.value }))}
+                      className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                    >
+                      <option value="Recepcion">Recepción (Ingreso)</option>
+                      <option value="Diagnostico">Diagnóstico (Evaluación)</option>
+                      <option value="Cotizacion">Cotización (Presupuesto)</option>
+                      <option value="Aprobacion_Cotizacion">Aprobación (Espera de Cliente)</option>
+                      <option value="Reparacion">Reparación (Trabajo de Mecánico)</option>
+                      <option value="Listo">Listo (Entregado al Cliente)</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Mano de Obra (COP) */}
+                <div>
+                  <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Valor Mano de Obra (COP)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={newOrden.valor_mano_obra}
+                    onChange={e => setNewOrden(prev => ({ ...prev, valor_mano_obra: e.target.value }))}
+                    className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Diagnóstico técnico */}
+              <div>
+                <label className="block text-[10px] font-bold text-brand-text-muted mb-1.5 uppercase tracking-wider">Diagnóstico Técnico & Comentarios</label>
+                <textarea
+                  rows="3"
+                  required
+                  placeholder="Ej. Ruido extraño en motor, requiere cambio de empaquetadura de culata y ajuste general de válvulas."
+                  value={newOrden.diagnostico}
+                  onChange={e => setNewOrden(prev => ({ ...prev, diagnostico: e.target.value }))}
+                  className="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all leading-relaxed"
+                />
+              </div>
+
+              {/* Carrito de Repuestos */}
+              <div className="border-t border-white/5 pt-4 space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Repuestos & Consumibles Asociados</h4>
+                    <p className="text-[10px] text-brand-text-muted">Añada consumibles directamente del inventario. El stock se recalculará dinámicamente.</p>
+                  </div>
+                  
+                  {/* Selector de repuesto express */}
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select
+                      value={tempRepuesto.id_repuesto}
+                      onChange={e => setTempRepuesto(prev => ({ ...prev, id_repuesto: e.target.value }))}
+                      className="bg-brand-bg border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-primary transition-all w-full sm:w-56"
+                    >
+                      <option value="">-- Añadir Repuesto --</option>
+                      {repuestos.map(r => (
+                        <option key={r.id_repuesto} value={r.id_repuesto}>
+                          {r.nombre} (Dispo: {r.stock} u.)
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Cant."
+                      value={tempRepuesto.cantidad}
+                      onChange={e => setTempRepuesto(prev => ({ ...prev, cantidad: e.target.value }))}
+                      className="bg-brand-bg border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white text-center focus:outline-none focus:border-brand-primary transition-all w-16"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddRepuestoToOrden}
+                      className="bg-brand-primary hover:brightness-110 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de repuestos cargados a la orden */}
+                <div className="overflow-x-auto border border-white/5 rounded-xl bg-brand-surface/20">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-brand-surface/40 text-[10px] text-brand-text-muted uppercase font-bold tracking-wider border-b border-white/5">
+                        <th className="px-4 py-2">Detalle de Repuesto</th>
+                        <th className="px-4 py-2 text-right">Precio Unitario</th>
+                        <th className="px-4 py-2 text-center">Cantidad</th>
+                        <th className="px-4 py-2 text-right">Subtotal</th>
+                        <th className="px-4 py-2 text-right"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {newOrden.detalleOrden.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-4 py-6 text-center text-brand-text-muted italic">
+                            No hay repuestos agregados a esta orden.
+                          </td>
+                        </tr>
+                      ) : (
+                        newOrden.detalleOrden.map((d) => (
+                          <tr key={d.id_repuesto} className="hover:bg-white/[0.01] transition-colors">
+                            <td className="px-4 py-2 font-medium text-white">
+                              {d.nombre_Respuesto}
+                            </td>
+                            <td className="px-4 py-2 text-right text-brand-text-muted font-mono">
+                              {d.precio.toLocaleString('es-CO')} COP
+                            </td>
+                            <td className="px-4 py-2 text-center text-white font-mono">
+                              {d.cantidad} u.
+                            </td>
+                            <td className="px-4 py-2 text-right text-brand-primary font-bold font-mono">
+                              {d.subtotal.toLocaleString('es-CO')} COP
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRepuestoFromOrden(d.id_repuesto)}
+                                className="text-brand-accent-red hover:text-brand-accent-red/80 font-bold font-mono cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totales de la orden */}
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-brand-surface/10 p-4 rounded-xl border border-white/5">
+                  <div className="text-[11px] text-brand-text-muted">
+                    Mano de obra: <strong className="text-white font-mono">{parseFloat(newOrden.valor_mano_obra || 0).toLocaleString('es-CO')} COP</strong><br />
+                    Repuestos: <strong className="text-white font-mono">
+                      {newOrden.detalleOrden.reduce((acc, curr) => acc + curr.subtotal, 0).toLocaleString('es-CO')} COP
+                    </strong>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-brand-text-muted uppercase font-bold tracking-wider block">Total General Estimado</span>
+                    <h3 className="text-2xl font-black text-brand-primary font-mono mt-1">
+                      {(
+                        parseFloat(newOrden.valor_mano_obra || 0) + 
+                        newOrden.detalleOrden.reduce((acc, curr) => acc + curr.subtotal, 0)
+                      ).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })} COP
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones de Envío */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowOrdenForm(false); setSelectedOrden(null); }}
+                  className="bg-white/5 hover:bg-white/10 text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={ordenFormLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-secondary to-brand-primary hover:brightness-110 disabled:brightness-75 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  {ordenFormLoading ? 'Procesando...' : (selectedOrden ? 'Guardar Cambios' : 'Registrar Orden')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL DE HISTORIAL DE SERVICIOS (RF-07) ── */}
       {serviceHistoryMoto && (
         <div className="fixed inset-0 bg-brand-bg/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -3202,6 +3291,35 @@ export default function Dashboard() {
               >
                 Cerrar Historial
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sistema global de notificaciones Toast */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-[100] animate-bounce-subtle pointer-events-none">
+          <div className={`glass px-5 py-4 rounded-2xl border flex items-center gap-3 shadow-2xl backdrop-blur-xl ${
+            toast.type === 'success' 
+              ? 'border-brand-accent-green/20 bg-brand-accent-green/10 text-brand-accent-green shadow-brand-accent-green/10' 
+              : 'border-brand-accent-red/20 bg-brand-accent-red/10 text-brand-accent-red shadow-brand-accent-red/10'
+          }`}>
+            <div className={`p-2 rounded-xl ${
+              toast.type === 'success' ? 'bg-brand-accent-green/20' : 'bg-brand-accent-red/20'
+            }`}>
+              {toast.type === 'success' ? (
+                <svg className="w-5 h-5 text-brand-accent-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-brand-accent-red" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white uppercase tracking-wider">{toast.type === 'success' ? 'Éxito' : 'Error'}</p>
+              <p className="text-[11px] text-brand-text-muted mt-0.5">{toast.message}</p>
             </div>
           </div>
         </div>
