@@ -7,11 +7,14 @@ export const ordenesService = {
    */
   getAll: (params = {}) => {
     const query = new URLSearchParams();
-    if (params.page)        query.append('page', params.page);
-    if (params.limit)       query.append('limit', params.limit);
-    if (params.id_moto)     query.append('id_moto', params.id_moto);
-    if (params.id_mecanico) query.append('id_mecanico', params.id_mecanico);
-    if (params.estado)      query.append('estado', params.estado);
+    if (params.page)             query.append('page', params.page);
+    if (params.limit)            query.append('limit', params.limit);
+    if (params.id_moto)          query.append('id_moto', params.id_moto);
+    if (params.id_mecanico)      query.append('id_mecanico', params.id_mecanico);
+    if (params.estado)           query.append('estado', params.estado);
+    if (params.placa_moto)       query.append('placa_moto', params.placa_moto);
+    if (params.id_orden_trabajo) query.append('id_orden_trabajo', params.id_orden_trabajo);
+    if (params.nombre_mecanico)  query.append('nombre_mecanico', params.nombre_mecanico);
 
     const qs = query.toString();
     return client.get(`/ordenes${qs ? `?${qs}` : ''}`);

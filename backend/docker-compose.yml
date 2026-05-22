@@ -34,6 +34,9 @@ services:
       PORT: ${PORT:-3000}
     ports:
       - "${PORT:-3000}:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
     command: sh -c "npx sequelize-cli db:migrate && node src/seeds/seedAdmin.js && npm start"
 
 volumes:
